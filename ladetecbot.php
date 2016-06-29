@@ -121,28 +121,38 @@ function processMessage($message) {
     // incoming text message
     $text = $message['text'];
 
-    if (strpos($text, "/start") === 0) {
+    if ($text === "/start") {
       apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Qual seu problema?', 'reply_markup' => array(
-        'keyboard' => array(array('Banco de Dados', 'Equipamentos de Informática', 'Outro')),
+        'keyboard' => array(array('Banco de Dados'), array ('Equipamentos de Informática ou Programas'), array ('Outros')),
         'one_time_keyboard' => true,
         'resize_keyboard' => true)));
     } else if ($text === "Banco de Dados") {
       apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Em qual banco esta tendo problemas?', 'reply_markup' => array(
-        'keyboard' => array(array('Lims', 'Soluções', 'LBCD', 'Outro')),
+        'keyboard' => array(array('Lims'), array ('Soluções'), array ('LBCD'), array ('Outro Banco de Dados')),
         'one_time_keyboard' => true,
         'resize_keyboard' => true)));
-    } else if ($text === "Equipamentos de Informática") {
-      apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Indisponivel'));
-    } else if ($text === "Outro") {
-      apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Indisponivel'));
-    }else if ($text === "Lims") {
+    } else if ($text === "Equipamentos de Informática ou Programas") {
+      apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Qual tipo de equipamento?', 'reply_markup' => array(
+        'keyboard' => array(array('Computador ou Periférico'), array('Impressora'),array('Controle de acesso'),array('Outro Equipamento')),
+        'one_time_keyboard' => true,
+        'resize_keyboard' => true)));
+    } else if ($text === "Outros") {
+      apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Qual seu problema?', 'reply_markup' => array(
+        'keybaord' => array(array('VOIP'), array('Rede'),array('Outro')),
+        'one_time_keyboard' => true,
+        'resize_keyboard' => true)));
+    }else if ($text === "Lims" || $text === "Soluções" || $text === "LBCD" || $text === "Rede") {
       apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Descreva seu problema:'));
-    }else if ($text === "Soluções") {
-      apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Descreva seu problema:'));
-    }else if ($text === "LBCD") {
-      apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Descreva seu problema:'));
-    }else if ($text === "Outro") {
+    }else if ($text === "Outro Banco de Dados") {
       apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Descreva seu problema e o banco:'));
+    }else if ($text === "Outro Equipamento") {
+      apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Descreva seu problema e o equipamento:'));
+    }else if ($text === "Outro") {
+      apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Onde se encontra o problema?'));
+    }else if ($text === "Computador ou Periférico" || $text === "Impressora" || $text === "Controle de acesso" || $text === "VOIP") {
+      apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Onde se encontra o equipamento?'));
+    }else if (false) {// tratar esse caso qnd o canco estiver pronto
+      apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Descreva seu problema:'));
     }else {
       apiRequestWebhook("sendMessage", array('chat_id' => $chat_id, "text" => 'A equipe de TI estrá empenhada em resolver seu problema.'));
     }
@@ -158,35 +168,6 @@ define('WEBHOOK_URL', 'https://ladetecbot-mad27.c9users.io/ladetecbot.php' );
 $content = file_get_contents("php://input");
 $update = json_decode($content, true);
 
-if (!$update) {
-  // receive wrong update, must not happen
-  exit;
-}
-
 if (isset($update["message"])) {
   processMessage($update["message"]);
 }
-function sendMessage($method, $parameters) {
-  $options = array(
-  	'http' => array(
-    'method'  => 'POST',
-    'content' => json_encode($parameters),
-    'header'=>  "Content-Type: application/json\r\n" .
-                "Accept: application/json\r\n"
-    )
-  );
-$context  = stream_context_create( $options );
-file_get_contents(API_URL.$method, false, $context );
-}
-
-//obtém as atualizações do bot
-$update_response = file_get_contents(API_URL."getupdates");
-$response = json_decode($update_response, true);
-$length = count($response["result"]);
-
-//obtém a última atualização recebida pelo bot
-$update = $response["result"][$length-1];
-if (isset($update["message"])) {
-  processMessage($update["message"]);
-}
-?>
