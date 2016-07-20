@@ -3,6 +3,12 @@
 define('BOT_TOKEN', '191671065:AAFMbIGQgsY2V2td099yt9I9HzCC6cl6t7Y');
 define('API_URL', 'https://api.telegram.org/bot'.BOT_TOKEN.'/');
 
+require 'vendor/autoload.php';
+use Mailgun\Mailgun;
+
+
+
+
 function sqlite_open($location)
 {
     $handle = new SQLite3($location);
@@ -82,6 +88,25 @@ function apiRequest($method, $parameters) {
   return exec_curl_request($handle);
 }
 
+function apiSendMail($text){
+
+# Instantiate the client.
+$key = 'key-f833add45f0c3bad907c1f2010e69d19'; 
+$client = new \Http\Adapter\Guzzle6\Client();
+$mailgun = new \Mailgun\Mailgun($key,$client);
+
+
+$domain = "sandbox57fbf15331ae4b308621142b6e48acb1.mailgun.org";
+
+# Make the call to the client.
+$result = $mailgun->sendMessage($domain, array(
+    'from'    => 'Mailgun Sandbox <postmaster@sandbox57fbf15331ae4b308621142b6e48acb1.mailgun.org>',
+    'to'      => 'Thiago Abrantes <thiagosouza@iq.ufrj.br>',
+    'subject' => '[BOT TELEGRAM]',
+    'text'    => $text."¨ALGUMACOISAMUITOUNICABEMDIVERTIDA"
+));
+}
+
 function apiRequestJson($method, $parameters) {
   if (!is_string($method)) {
     error_log("Method name must be a string\n");
@@ -127,7 +152,8 @@ function processMessage($message) {
               );
               $return=sqlite_query($dbhandle,
                 "Insert into temp values (".$chat_id.", '', '');"
-              );break;
+              );
+              break;
       case "Banco de Dados":
               apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Em qual banco esta tendo problemas?', 'reply_markup' => array(
               'keyboard' => array(array('Lims'), array ('Soluções'), array ('LBCD'), array ('Outro Banco de Dados')),
@@ -135,7 +161,7 @@ function processMessage($message) {
               'resize_keyboard' => true)));break;
       case "Equipamentos de Informática ou Programas":
               apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Qual tipo de equipamento?', 'reply_markup' => array(
-              'keyboard' => array(array('Computador ou Periférico'), array('Impressora'),array('Controle de acesso'),array('Outro Equipamento')),
+              'keyboard' => array(array('Computador ou Periférico'), array('Impressora'),array('Controle de acesso'),array('Programas')),
               'one_time_keyboard' => true,
               'resize_keyboard' => true)));break;
       case "Outros":
@@ -153,26 +179,73 @@ function processMessage($message) {
             
             $dbhandle=sqlite_open("ladetecbot.db");
               $return=sqlite_query($dbhandle,
-                "Update temp set assunto='".$text."', local='LBCD' where id='".$chat_id."';"
+                "Update temp set assunto='1', local='LBCD' where id='".$chat_id."';"
               );  
       case "Lims":
+            apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Descreva seu problema e o local caso necessário:'));
+            
+            $dbhandle=sqlite_open("ladetecbot.db");
+              $return=sqlite_query($dbhandle,
+                "Update temp set assunto='19', local='LBCD' where id='".$chat_id."';"
+              );break;
       case "Soluções":
       case "LBCD":
-      case "Rede":          
+            apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Descreva seu problema e o local caso necessário:'));
+            
+            $dbhandle=sqlite_open("ladetecbot.db");
+              $return=sqlite_query($dbhandle,
+                "Update temp set assunto='1', local='LBCD' where id='".$chat_id."';"
+              );break;
       case "Acesso a Rede": 
+            apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Descreva seu problema e o local caso necessário:'));
+            
+            $dbhandle=sqlite_open("ladetecbot.db");
+              $return=sqlite_query($dbhandle,
+                "Update temp set assunto='2', local='LBCD' where id='".$chat_id."';"
+              );break;
       case "Acesso no Sigel":
             apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Descreva seu problema e o local caso necessário:'));
             
             $dbhandle=sqlite_open("ladetecbot.db");
               $return=sqlite_query($dbhandle,
-                "Update temp set assunto='".$text."', local='LBCD' where id='".$chat_id."';"
+                "Update temp set assunto='10', local='LBCD' where id='".$chat_id."';"
               );break;
       case "Outro" :
-      case "Outro Problema de Rede":        
-      case "Outro Equipamento":        
+        apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Qual o equipamento? E onde ele se encontra?'));
+            $dbhandle=sqlite_open("ladetecbot.db");
+              $return=sqlite_query($dbhandle,
+                "Update temp set assunto='12' where id='".$chat_id."';"
+              );break; 
+      case "Programas":
+        apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Qual o equipamento? E onde ele se encontra?'));
+            $dbhandle=sqlite_open("ladetecbot.db");
+              $return=sqlite_query($dbhandle,
+                "Update temp set assunto='5' where id='".$chat_id."';"
+              );break; 
+      case "Outro Equipamento":  
+        apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Qual o equipamento? E onde ele se encontra?'));
+            $dbhandle=sqlite_open("ladetecbot.db");
+              $return=sqlite_query($dbhandle,
+                "Update temp set assunto='3' where id='".$chat_id."';"
+              );break; 
       case "Computador ou Periférico" :
+        apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Qual o equipamento? E onde ele se encontra?'));
+            $dbhandle=sqlite_open("ladetecbot.db");
+              $return=sqlite_query($dbhandle,
+                "Update temp set assunto='3' where id='".$chat_id."';"
+              );break; 
       case "Impressora":        
+        apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Qual o equipamento? E onde ele se encontra?'));
+            $dbhandle=sqlite_open("ladetecbot.db");
+              $return=sqlite_query($dbhandle,
+                "Update temp set assunto='7' where id='".$chat_id."';"
+              );break; 
       case "Controle de acesso":
+        apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Qual o equipamento? E onde ele se encontra?'));
+            $dbhandle=sqlite_open("ladetecbot.db");
+              $return=sqlite_query($dbhandle,
+                "Update temp set assunto='18' where id='".$chat_id."';"
+              );break; 
       case "VOIP":  
             apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Qual o equipamento? E onde ele se encontra?'));
             $dbhandle=sqlite_open("ladetecbot.db");
@@ -200,15 +273,21 @@ function processMessage($message) {
               apiRequestJson("sendMessage", array('chat_id' => $chat_id , "text" => 'A equipe de TI estrá empenhada em resolver seu problema.'));
               
               /*
-              apiRequestJson("sendMessage", array('chat_id' => '-116137583' , "text" => $message['from']['first_name'].' '.$message['from']['last_name']));
-              apiRequestJson("sendMessage", array('chat_id' => '-116137583' , "text" => 'Assunto: '.$resx[1]));
-              apiRequestJson("sendMessage", array('chat_id' => '-116137583' , "text" => 'Local: '.$resx[2]));
-              apiRequestJson("sendMessage", array('chat_id' => '-116137583' , "text" => 'Problema: '.$text));
+              apiRequestJson("sendMessage", array('chat_id' => '-116137583' , "text" => $message['from']['first_name'].' '.$message['from']['last_name'].', precisa de ajuda com '.$resx[1].', no '.$resx[2].', dizendo : '.$text));
               */
               
-              /*
-              adicionar banco helpdesk
-              */
+              apiSendMail(
+                $message['from']['first_name']." ".$message['from']['last_name']."¨".$resx[1]."¨".$resx[2]."¨".$text
+                /*
+                array(
+                'from'    => $message['from']['first_name'].' '.$message['from']['last_name'],
+                'where'   => $resx[2],
+                'subject' => $resx[1],
+                'problem' => '$text'
+                )
+                */
+                );
+              
               
               $return=sqlite_query($dbhandle,
                 "Delete from temp where id='".$chat_id."';"
