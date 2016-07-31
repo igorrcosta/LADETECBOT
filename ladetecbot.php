@@ -3,7 +3,7 @@
 define('BOT_TOKEN', '');
 define('MAILGUN_TOKEN', '');
 define('API_URL', 'https://api.telegram.org/bot'.BOT_TOKEN.'/');
-
+define('TOKEN_TI', '*******');
 require 'vendor/autoload.php';
 use Mailgun\Mailgun;
 
@@ -77,6 +77,22 @@ function apiSendMail ($text) {
     ));
 }
 
+#Comandos:
+#/singin TOKEN_TI
+#Cria um novo TI
+#/take id_chamado
+#Vincula um chamado ao seu id_TI
+#/pass nome_do_TI-id_chamado
+#Passa o chamado para outro TI
+#/answer texto_resposta-id_chamado
+#Manda uma msg para quem abriu o chamado
+#/close text_resposta-id_chamado
+#Fecha o chamado e manda uma msg para quem abriu o chamado
+#/start
+#Abre um chamado
+#default: 1)Usuário responde um chamado
+#default: 2)Print help start
+#Fazer um /help!!!
 function apiRequestJson ($method, $parameters) {
   $parameters["method"] = $method;
   $handle = curl_init (API_URL);
@@ -93,8 +109,10 @@ function processMessage ($message) {
   if (isset ($message['text']) ) {
     $text = $message['text'];
     error_log2 ($text);
+    #Transformar os if/elseif em dicionario de opcoes!!!
+    #Testar o %0A!!!
     if (strpos ($text, "/singin") === 0) {
-      if (substr ($text, 7, -0) === TI_TOKEN){
+      if (substr ($text, 7, -0) === TOKEN_TI){
         $dbhandle = sqlite_open("/tmp/ladetecbot.db");
         $return = sqlite_query($dbhandle,
           "INSERT into ti values (,'".  $message['from']['first_name']." ".$message['from']['last_name']."','".$chat_id."');"
@@ -122,18 +140,24 @@ function processMessage ($message) {
       }
       else{
         //erro_log2('more or less than 2 arguments!');
+        #Adicionar help do bot!!! (Para todas as opções)
       }
     }
     elseif (strpos ($text, "/answer") === 0){
       $text = substr($text, 7, -0);
       $answer = explode("-", $text);
-      if (sizeof($pass) === 2){
+      if (sizeof($answer) === 2){
         $dbhandle = sqlite_open("/tmp/ladetecbot.db");
-        $return = sqlite_query($dbhandle,"SELECT * from chamados where id=".$pass[1].";");
+        $return = sqlite_query($dbhandle,"SELECT * from chamados where id=".$answer[1].";"); #Pega a conversa anterior e o id do TI.
         $resx = $return->fetchArray();
+        $id_chamado = $resx[1];
+        $id_TI = $resx[0];
+        $conversa_anterior = $resx[3];
+        $texto_problema = $conversa_anterior."%0ATI: ".$answer[0]; #Concatena a conversa anterior com o texto
         $return = sqlite_query($dbhandle,
-          "UPDATE chamados set problema="$resx[3]."\nTI: ".$resx[0]." where id=".$pass[1].";"
+          "UPDATE chamados set problema=`".$texto_problema."` where id=".$answer[1].";"
         );
+        #Adicionar resposta do bot quando o chamado é fechado!!!
       }
       else{
         //erro_log2('more or less than 2 arguments!');
@@ -142,10 +166,12 @@ function processMessage ($message) {
     elseif (strpos ($text, "/close") === 0) {
       $text = substr($text, 6, -0);
       $answer = explode("-", $text);
-      if (sizeof($pass) === 2){
+      if (sizeof($answer) === 2){
         $dbhandle = sqlite_open("/tmp/ladetecbot.db");
-        $return = sqlite_query($dbhandle,"DELETE from chamados where id=".$pass[1].";");
+        $return = sqlite_query($dbhandle,"DELETE from chamados where id=".$answer[1].";");
       }
+      #Adicionar resposta do bot quando o chamado é fechado!!!
+      #Enviar email do mailgun igual ao email de abertura!!!
       else {
         //erro_log2('more or less than 2 arguments!');
       }
@@ -153,7 +179,7 @@ function processMessage ($message) {
     else {
       switch ($text) {
         case "/start":
-            apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Qual seu problema?', 'reply_markup' => array(
+            apiRequestJson("sendMessage", array('chat_id' => $chat_id, "text" => 'Qual seu%0A problema?', 'reply_markup' => array(
             'keyboard' => array(array('Banco de Dados'), array ('Equipamentos de Informática ou Programas'), array ('Outros')),
             'one_time_keyboard' => true,
             'resize_keyboard' => true)));
@@ -258,9 +284,10 @@ function processMessage ($message) {
               "Update tmp set assunto='".$text."' where id='".$chat_id."';"
             );break;
        default:
+       #Criar combo para escolher o chamado que vai ser respondido!!!
             $dbhandle = sqlite_open("/tmp/ladetecbot.db");
             $return = sqlite_query($dbhandle,"Select * from chamados where chat='".$chat_id."';");
-            if($return->fetchArray();) {
+            if($return->fetchArray();) { #Resposta do usuario as perguntas da TI
               $resx = $return->fetchArray();
               $return = sqlite_query($dbhandle,
                 "UPDATE chamados set problema="$resx[3]."\n".$message['from']['first_name'].": ".$resx[0]." where id=".$pass[1].";"
